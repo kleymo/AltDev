@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -17,16 +18,30 @@ type Config struct {
 	BackendPort          string
 	DefaultAdminLogin    string
 	DefaultAdminPassword string
-	ImgMaxUploadMb       string
-	DocMaxUploadMb       string
+	ImgMaxUploadMb       int64
+	DocMaxUploadMb       int64
 	ImgDefaultPath       string
 	DocDefaultPath       string
 }
 
-func Load() (*Config, error) {
-	if err := godotenv.Load("../.env"); err != nil {
-		return nil, fmt.Errorf("ERROR env: %w", err)
+func getEnvInt64(key string) int64 {
+	val := os.Getenv(key)
+	if val == "" {
+		return 0
 	}
+	i, err := strconv.ParseInt(val, 10, 64)
+	if err != nil {
+		return 0
+	}
+	return i
+}
+
+func Load() (*Config, error) {
+	// Загружаем .env
+	if err := godotenv.Load("../.env"); err != nil {
+		return nil, fmt.Errorf("ERROR loading .env: %w", err)
+	}
+
 	return &Config{
 		PostgresUser:         os.Getenv("postgres_user"),
 		PostgresPassword:     os.Getenv("postgres_password"),
@@ -37,9 +52,11 @@ func Load() (*Config, error) {
 		BackendPort:          os.Getenv("backend_port"),
 		DefaultAdminLogin:    os.Getenv("default_admin_login"),
 		DefaultAdminPassword: os.Getenv("default_admin_password"),
-		ImgMaxUploadMb:       os.Getenv("img_max_upload_mb"),
-		ImgDefaultPath:       os.Getenv("upload_img_dir"),
-		DocMaxUploadMb:       os.Getenv("doc_max_upload_mb"),
-		DocDefaultPath:       os.Getenv("upload_doc_dir"),
+
+		ImgMaxUploadMb: getEnvInt64("img_max_upload_mb"),
+		DocMaxUploadMb: getEnvInt64("doc_max_upload_mb"),
+
+		ImgDefaultPath: os.Getenv("upload_img_dir"),
+		DocDefaultPath: os.Getenv("upload_doc_dir"),
 	}, nil
 }
