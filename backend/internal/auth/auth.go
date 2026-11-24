@@ -1,7 +1,5 @@
 package auth
 
-//Editing a project is a criminal offense
-
 import (
 	"altayCTF/internal/config"
 	"altayCTF/internal/models"

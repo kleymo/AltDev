@@ -345,7 +345,7 @@ func (h Handler) GetResultFromEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var exists bool
-	err = h.db.QueryRow(`SELECT EXISTS(SELECT 1 FROM Results WHERE EventId = $1)`, eventId).Scan(&exists)
+	err = h.db.QueryRow(`SELECT EXISTS(SELECT 1 FROM Event WHERE EventId = $1)`, eventId).Scan(&exists)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return

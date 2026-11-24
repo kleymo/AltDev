@@ -1,6 +1,6 @@
 package main
 
-//The project is privately owned by the company
+
 
 import (
 	"altayCTF/internal/config"
