@@ -72,6 +72,7 @@ CREATE TABLE Users
   Login Text NOT NULL UNIQUE,
   PasswordHash Text NOT NULL,
   Role Text DEFAULT 'user' CHECK (Role IN ('user', 'moderator', 'admin')),
+  PhotoURL Text,
   Created_at Timestamp DEFAULT CURRENT_TIMESTAMP,
   Updated_at Timestamp DEFAULT CURRENT_TIMESTAMP
 )
