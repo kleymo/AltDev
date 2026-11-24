@@ -132,7 +132,7 @@ func (h Handler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 		"data": map[string]interface{}{
 			"name":        req.Name,
 			"description": req.Description,
-			"dataStart":   event.DateStart,
+			"dateStart":   event.DateStart,
 			"endDate":     event.EndDate,
 			"PhotoURL":    req.PhotoURL,
 			"EventId":     event.EventId,
@@ -190,7 +190,7 @@ func (h Handler) GetEvents(w http.ResponseWriter, r *http.Request) {
 
 type ScoreEntry struct {
 	TeamId string `json:"team_id"`
-	Score  string `json:"score"`
+	Score  int `json:"score"`
 }
 
 type ResultReq struct {

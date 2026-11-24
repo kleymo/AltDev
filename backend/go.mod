@@ -12,6 +12,7 @@ require github.com/golang-jwt/jwt/v5 v5.3.1
 
 require (
 	github.com/AfterShip/email-verifier v1.4.1 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/hbollon/go-edlib v1.7.0 // indirect
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/text v0.40.0 // indirect

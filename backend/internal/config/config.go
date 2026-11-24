@@ -17,6 +17,10 @@ type Config struct {
 	BackendPort          string
 	DefaultAdminLogin    string
 	DefaultAdminPassword string
+	ImgMaxUploadMb       string
+	DocMaxUploadMb       string
+	ImgDefaultPath       string
+	DocDefaultPath       string
 }
 
 func Load() (*Config, error) {
@@ -33,5 +37,9 @@ func Load() (*Config, error) {
 		BackendPort:          os.Getenv("backend_port"),
 		DefaultAdminLogin:    os.Getenv("default_admin_login"),
 		DefaultAdminPassword: os.Getenv("default_admin_password"),
+		ImgMaxUploadMb:       os.Getenv("img_max_upload_mb"),
+		ImgDefaultPath:       os.Getenv("upload_img_dir"),
+		DocMaxUploadMb:       os.Getenv("doc_max_upload_mb"),
+		DocDefaultPath:       os.Getenv("upload_doc_dir"),
 	}, nil
 }
