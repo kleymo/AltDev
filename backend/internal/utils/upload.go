@@ -1,64 +1,83 @@
 package utils
 
 import (
-	"altayCTF/internal/config"
+	"bytes"
 	"fmt"
 	"io"
-	"log"
+	"mime/multipart"
 	"os"
 	"path/filepath"
-	"strings"
 	"uuid"
+
+	"github.com/disintegration/imaging"
+	"github.com/gabriel-vasile/mimetype"
 )
 
-var AllowedExtensions = map[string]bool{
-	".jpg":  true,
-	".jpeg": true,
-	".png":  true,
-	".webp": true,
+var allowedMimeTypes = map[string]bool{
+	"image/jpeg": true,
+	"image/png":  true,
+	"image/webp": true,
 }
 
-func GetImgDirAndMaxUpload() (string, string, error) {
-	cfg, err := config.Load()
-	if err != nil {
-		return "", "", fmt.Errorf("Не удалось получить конфиг:%s", err)
-	}
-	return cfg.ImgDefaultPath, cfg.ImgMaxUploadMb, nil
-}
-
-func UploadFile(file io.Reader, OriginalFileName string, path string) (string, error) {
-	uploadDir, uploadMax, err := GetImgDirAndMaxUpload()
-	if err != nil {
-		log.Println("Error in ENV: ", err)
-		return "", err
-	}
-
+func UploadFile(header *multipart.FileHeader, uploadDir string, MaxLoad int64) (string, error) {
 	//сделать гибче!!
-
-	ext := strings.ToLower(filepath.Ext(OriginalFileName))
-	if !AllowedExtensions[ext] {
-		return "", fmt.Errorf("недопустимый формат файла: %s", ext)
+	if header.Size > MaxLoad {
+		return "", fmt.Errorf("Файл слишком большой")
 	}
-	newFileName := uuid.New().String() + ext
+	src, err := header.Open()
+	if err != nil {
+		return "", fmt.Errorf("не удалось открыть файл: %w", err)
+	}
+	defer src.Close()
 
-	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
-		err := os.MkdirAll(uploadDir, os.ModePerm)
-		if err != nil {
-			return "", fmt.Errorf("не удалось создать директорию: %w", err)
-		}
+	data, err := io.ReadAll(io.LimitReader(src, MaxLoad+1))
+	if err != nil {
+		return "", fmt.Errorf("ошибка чтения файла: %w", err)
 	}
 
+	if int64(len(data)) > MaxLoad { // ← вот этого не хватает
+		return "", fmt.Errorf("файл превышает лимит %d байт", MaxLoad)
+	}
+
+	mtype := mimetype.Detect(data)
+	if !allowedMimeTypes[mtype.String()] {
+		return "", fmt.Errorf("недопустимый тип файла: %s", mtype.String())
+	}
+
+	if _, err := imaging.Decode(bytes.NewReader(data)); err != nil {
+		return "", fmt.Errorf("недопустимый тип файла")
+	}
+
+	//Директория с безопасными правами
+	if err := os.MkdirAll(uploadDir, 0o755); err != nil {
+		return "", fmt.Errorf("не удалось создать директорию: %w", err)
+	}
+
+	newFileName := uuid.New().String() + mtype.Extension()
 	fullPath := filepath.Join(uploadDir, newFileName)
 
-	out, err := os.Create(fullPath)
+	tmp, err := os.CreateTemp(uploadDir, "upload-*")
 	if err != nil {
-		return "", fmt.Errorf("не удалось создать файл на диске: %w", err)
+		return "", fmt.Errorf("не удалось создать временный файл: %w", err)
 	}
-	defer out.Close()
+	tmpName := tmp.Name()
+	defer os.Remove(tmpName)
 
-	_, err = io.Copy(out, file)
-	if err != nil {
-		return "", fmt.Errorf("ошибка при записи данных файла: %w", err)
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		return "", fmt.Errorf("ошибка записи: %w", err)
 	}
+	if err := tmp.Close(); err != nil {
+		return "", fmt.Errorf("ошибка закрытия: %w", err)
+	}
+
+	if err := os.Chmod(tmpName, 0o644); err != nil {
+		return "", fmt.Errorf("ошибка прав: %w", err)
+	}
+
+	if err := os.Rename(tmpName, fullPath); err != nil {
+		return "", fmt.Errorf("ошибка сохранения: %w", err)
+	}
+
 	return newFileName, nil
 }
